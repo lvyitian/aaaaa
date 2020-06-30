@@ -32,7 +32,7 @@ import top.dsbbs2.custom1.config.struct.Config;
 
 public class Main extends JavaPlugin implements Listener
 {
-  private static final List<Integer> availableSlots = Main.addAndReturn(Main.fromTo(0, 35), -106);
+  private static final List<Integer> availableSlots = Main.addAndReturn(Main.fromTo(0, 35), 40);
   private static final List<Integer> enderSlots = Main.fromTo(0, 26);
   public final SimpleConfig<Config> config = new SimpleConfig<Config>(
       this.getDataFolder().getAbsolutePath() + File.separator + "config.json", "UTF8", Config.class)
@@ -53,25 +53,61 @@ public class Main extends JavaPlugin implements Listener
       for (final Player player : Bukkit.getOnlinePlayers()) {
         final World world = player.getWorld();
         if (this.config.getConfig().worlds.contains(world.getName())) {
-          Arrays.asList(103, 102, 101, 100).parallelStream()
-              .filter(i -> this.config.getConfig().item_ids.contains(player.getInventory().getItem(i).getTypeId()))
+          Arrays.asList(39, 38, 37, 36).parallelStream()
+              .filter(i -> this.config.getConfig().item_ids.contains(Optional
+                  .ofNullable(player.getInventory().getItem(i)).orElse(new ItemStack(Integer.MIN_VALUE)).getTypeId()))
               .forEach(i ->
               {
-                final Optional<Integer> temp = Main.availableSlots.parallelStream()
-                    .filter(i2 -> player.getInventory().getItem(i2).getType() == Material.AIR).findFirst();
+                final Optional<Integer> temp = Main.availableSlots.parallelStream().filter(i2 -> (Optional
+                    .ofNullable(player.getInventory().getItem(i2)).orElse(new ItemStack(0))
+                    .getTypeId() == Material.AIR.getId())
+                    || ((Optional.ofNullable(player.getInventory().getItem(i2)).orElse(new ItemStack(0))
+                        .getTypeId() == Optional.ofNullable(player.getInventory().getItem(i)).orElse(new ItemStack(0))
+                            .getTypeId())
+                        && ((Optional.ofNullable(player.getInventory().getItem(i2)).orElse(new ItemStack(0)).getAmount()
+                            + Optional.ofNullable(player.getInventory().getItem(i)).orElse(new ItemStack(0))
+                                .getAmount()) <= Optional.ofNullable(player.getInventory().getItem(i2))
+                                    .orElse(new ItemStack(0)).getMaxStackSize())))
+                    .findFirst();
                 if (temp.isPresent()) {
                   final int t = temp.get();
-                  final ItemStack is = player.getInventory().getItem(i);
-                  player.getInventory().setItem(i, null);
-                  player.getInventory().setItem(t, is);
+                  final ItemStack is = Optional.ofNullable(player.getInventory().getItem(i)).orElse(new ItemStack(0));
+                  if (is.getType() != Optional.ofNullable(player.getInventory().getItem(t)).orElse(new ItemStack(0))
+                      .getType()) {
+                    player.getInventory().setItem(i, null);
+                    player.getInventory().setItem(t, is);
+                  } else {
+                    final ItemStack is2 = Optional.ofNullable(player.getInventory().getItem(t))
+                        .orElse(new ItemStack(0));
+                    is2.setAmount(is2.getAmount() + is.getAmount());
+                    player.getInventory().setItem(t, is2);
+                  }
                 } else {
                   final Optional<Integer> temp2 = Main.enderSlots.parallelStream()
-                      .filter(i2 -> player.getEnderChest().getItem(i2).getType() == Material.AIR).findFirst();
+                      .filter(i2 -> (Optional.ofNullable(player.getEnderChest().getItem(i2)).orElse(new ItemStack(0))
+                          .getTypeId() == Material.AIR.getId())
+                          || ((Optional.ofNullable(player.getInventory().getItem(i2)).orElse(new ItemStack(0))
+                              .getTypeId() == Optional.ofNullable(player.getInventory().getItem(i))
+                                  .orElse(new ItemStack(0)).getTypeId())
+                              && ((Optional.ofNullable(player.getInventory().getItem(i2)).orElse(new ItemStack(0))
+                                  .getAmount()
+                                  + Optional.ofNullable(player.getInventory().getItem(i)).orElse(new ItemStack(0))
+                                      .getAmount()) <= Optional.ofNullable(player.getInventory().getItem(i2))
+                                          .orElse(new ItemStack(0)).getMaxStackSize())))
+                      .findFirst();
                   if (temp2.isPresent()) {
                     final int t = temp.get();
-                    final ItemStack is = player.getInventory().getItem(i);
-                    player.getInventory().setItem(i, null);
-                    player.getEnderChest().setItem(t, is);
+                    final ItemStack is = Optional.ofNullable(player.getInventory().getItem(i)).orElse(new ItemStack(0));
+                    if (is.getType() != Optional.ofNullable(player.getEnderChest().getItem(t)).orElse(new ItemStack(0))
+                        .getType()) {
+                      player.getInventory().setItem(i, null);
+                      player.getEnderChest().setItem(t, is);
+                    } else {
+                      final ItemStack is2 = Optional.ofNullable(player.getEnderChest().getItem(t))
+                          .orElse(new ItemStack(0));
+                      is2.setAmount(is2.getAmount() + is.getAmount());
+                      player.getEnderChest().setItem(t, is2);
+                    }
                   } else {
                     player.sendMessage("背包和末影箱空间不足");
                     if (player.getActivePotionEffects().parallelStream()
@@ -151,28 +187,66 @@ public class Main extends JavaPlugin implements Listener
   {
     if (this.config.getConfig().worlds.contains(e.getTo().getWorld().getName())) {
       final Reference<Boolean> isret = new Reference<>(false);
-      Arrays.asList(103, 102, 101, 100).parallelStream()
-          .filter(i -> this.config.getConfig().item_ids.contains(e.getPlayer().getInventory().getItem(i).getTypeId()))
+      Arrays.asList(39, 38, 37, 36).parallelStream().filter(i -> this.config.getConfig().item_ids.contains(Optional
+          .ofNullable(e.getPlayer().getInventory().getItem(i)).orElse(new ItemStack(Integer.MIN_VALUE)).getTypeId()))
           .forEach(i ->
           {
             if (isret.value) {
               return;
             }
             final Optional<Integer> temp = Main.availableSlots.parallelStream()
-                .filter(i2 -> e.getPlayer().getInventory().getItem(i2).getType() == Material.AIR).findFirst();
+                .filter(i2 -> (Optional.ofNullable(e.getPlayer().getInventory().getItem(i2)).orElse(new ItemStack(0))
+                    .getTypeId() == Material.AIR.getId())
+                    || ((Optional.ofNullable(e.getPlayer().getInventory().getItem(i2)).orElse(new ItemStack(0))
+                        .getTypeId() == Optional.ofNullable(e.getPlayer().getInventory().getItem(i))
+                            .orElse(new ItemStack(0)).getTypeId())
+                        && ((Optional.ofNullable(e.getPlayer().getInventory().getItem(i2)).orElse(new ItemStack(0))
+                            .getAmount()
+                            + Optional.ofNullable(e.getPlayer().getInventory().getItem(i)).orElse(new ItemStack(0))
+                                .getAmount()) <= Optional.ofNullable(e.getPlayer().getInventory().getItem(i2))
+                                    .orElse(new ItemStack(0)).getMaxStackSize())))
+                .findFirst();
             if (temp.isPresent()) {
               final int t = temp.get();
-              final ItemStack is = e.getPlayer().getInventory().getItem(i);
-              e.getPlayer().getInventory().setItem(i, null);
-              e.getPlayer().getInventory().setItem(t, is);
+              final ItemStack is = Optional.ofNullable(e.getPlayer().getInventory().getItem(i))
+                  .orElse(new ItemStack(0));
+              if (is.getType() != Optional.ofNullable(e.getPlayer().getInventory().getItem(t)).orElse(new ItemStack(0))
+                  .getType()) {
+                e.getPlayer().getInventory().setItem(i, null);
+                e.getPlayer().getInventory().setItem(t, is);
+              } else {
+                final ItemStack is2 = Optional.ofNullable(e.getPlayer().getInventory().getItem(t))
+                    .orElse(new ItemStack(0));
+                is2.setAmount(is2.getAmount() + is.getAmount());
+                e.getPlayer().getInventory().setItem(t, is2);
+              }
             } else {
               final Optional<Integer> temp2 = Main.enderSlots.parallelStream()
-                  .filter(i2 -> e.getPlayer().getEnderChest().getItem(i2).getType() == Material.AIR).findFirst();
+                  .filter(i2 -> (Optional.ofNullable(e.getPlayer().getEnderChest().getItem(i2)).orElse(new ItemStack(0))
+                      .getTypeId() == Material.AIR.getId())
+                      || ((Optional.ofNullable(e.getPlayer().getInventory().getItem(i2)).orElse(new ItemStack(0))
+                          .getTypeId() == Optional.ofNullable(e.getPlayer().getInventory().getItem(i))
+                              .orElse(new ItemStack(0)).getTypeId())
+                          && ((Optional.ofNullable(e.getPlayer().getInventory().getItem(i2)).orElse(new ItemStack(0))
+                              .getAmount()
+                              + Optional.ofNullable(e.getPlayer().getInventory().getItem(i)).orElse(new ItemStack(0))
+                                  .getAmount()) <= Optional.ofNullable(e.getPlayer().getInventory().getItem(i2))
+                                      .orElse(new ItemStack(0)).getMaxStackSize())))
+                  .findFirst();
               if (temp2.isPresent()) {
                 final int t = temp.get();
-                final ItemStack is = e.getPlayer().getInventory().getItem(i);
-                e.getPlayer().getInventory().setItem(i, null);
-                e.getPlayer().getEnderChest().setItem(t, is);
+                final ItemStack is = Optional.ofNullable(e.getPlayer().getInventory().getItem(i))
+                    .orElse(new ItemStack(0));
+                if (is.getType() != Optional.ofNullable(e.getPlayer().getEnderChest().getItem(t))
+                    .orElse(new ItemStack(0)).getType()) {
+                  e.getPlayer().getInventory().setItem(i, null);
+                  e.getPlayer().getEnderChest().setItem(t, is);
+                } else {
+                  final ItemStack is2 = Optional.ofNullable(e.getPlayer().getEnderChest().getItem(t))
+                      .orElse(new ItemStack(0));
+                  is2.setAmount(is2.getAmount() + is.getAmount());
+                  e.getPlayer().getEnderChest().setItem(t, is2);
+                }
               } else {
                 isret.value = true;
                 return;
