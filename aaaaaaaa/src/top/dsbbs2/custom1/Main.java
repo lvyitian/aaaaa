@@ -16,9 +16,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
@@ -171,13 +173,34 @@ public class Main extends JavaPlugin implements Listener
   public void onPlayerInteractEntity(final PlayerInteractEntityEvent e)
   {
     if (this.config.getConfig().worlds.contains(e.getPlayer().getWorld().getName())) {
-      Optional.ofNullable(e.getPlayer().getInventory().getItem(e.getHand())).ifPresent(i ->
-      {
-        if (this.config.getConfig().item_ids.contains(i.getTypeId())) {
-          e.setCancelled(true);
-          e.getPlayer().sendMessage("此世界禁止使用此物品");
-        }
-      });
+      Optional
+          .ofNullable(e.getPlayer().getInventory()
+              .getItem(e.getHand() == EquipmentSlot.OFF_HAND ? 40 : e.getPlayer().getInventory().getHeldItemSlot()))
+          .ifPresent(i ->
+          {
+            if (this.config.getConfig().item_ids.contains(i.getTypeId())) {
+              e.setCancelled(true);
+              e.getPlayer().sendMessage("此世界禁止使用此物品");
+            }
+          });
+    }
+  }
+
+  @SuppressWarnings("deprecation")
+  @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
+  public void onPlayerAttackEntity(final EntityDamageByEntityEvent e)
+  {
+    if (this.config.getConfig().worlds.contains(e.getDamager().getWorld().getName())) {
+      if (e.getDamager() instanceof Player) {
+        final Player player = (Player) e.getDamager();
+        Optional.ofNullable(player.getInventory().getItemInMainHand()).ifPresent(i ->
+        {
+          if (this.config.getConfig().item_ids.contains(i.getTypeId())) {
+            e.setCancelled(true);
+            player.sendMessage("此世界禁止使用此物品");
+          }
+        });
+      }
     }
   }
 
