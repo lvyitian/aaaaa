@@ -9,8 +9,10 @@ import java.util.Vector;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -19,6 +21,8 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import top.dsbbs2.common.closure.Reference;
 import top.dsbbs2.common.command.CommandRegistry;
@@ -38,11 +42,61 @@ public class Main extends JavaPlugin implements Listener
     }
   };
 
+  @SuppressWarnings("deprecation")
   @Override
   public void onEnable()
   {
     CommandRegistry.regCom(this.getName(), CommandRegistry.newPluginCommand("cusrel", this));
     Bukkit.getPluginManager().registerEvents(this, this);
+    Bukkit.getScheduler().runTaskTimer(this, () ->
+    {
+      for (final Player player : Bukkit.getOnlinePlayers()) {
+        final World world = player.getWorld();
+        if (this.config.getConfig().worlds.contains(world.getName())) {
+          Arrays.asList(103, 102, 101, 100).parallelStream()
+              .filter(i -> this.config.getConfig().item_ids.contains(player.getInventory().getItem(i).getTypeId()))
+              .forEach(i ->
+              {
+                final Optional<Integer> temp = Main.availableSlots.parallelStream()
+                    .filter(i2 -> player.getInventory().getItem(i2).getType() == Material.AIR).findFirst();
+                if (temp.isPresent()) {
+                  final int t = temp.get();
+                  final ItemStack is = player.getInventory().getItem(i);
+                  player.getInventory().setItem(i, null);
+                  player.getInventory().setItem(t, is);
+                } else {
+                  final Optional<Integer> temp2 = Main.enderSlots.parallelStream()
+                      .filter(i2 -> player.getEnderChest().getItem(i2).getType() == Material.AIR).findFirst();
+                  if (temp2.isPresent()) {
+                    final int t = temp.get();
+                    final ItemStack is = player.getInventory().getItem(i);
+                    player.getInventory().setItem(i, null);
+                    player.getEnderChest().setItem(t, is);
+                  } else {
+                    player.sendMessage("背包和末影箱空间不足");
+                    if (player.getActivePotionEffects().parallelStream()
+                        .noneMatch(i2 -> i2.getType() == PotionEffectType.SLOW_DIGGING)) {
+                      player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_DIGGING, 20, 255, true, false),
+                          true);
+                    }
+                    if (player.getActivePotionEffects().parallelStream()
+                        .noneMatch(i2 -> i2.getType() == PotionEffectType.WEAKNESS)) {
+                      player.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 20, 255, true, false), true);
+                    }
+                    if (player.getActivePotionEffects().parallelStream()
+                        .noneMatch(i2 -> i2.getType() == PotionEffectType.CONFUSION)) {
+                      player.addPotionEffect(new PotionEffect(PotionEffectType.CONFUSION, 20, 255, true, false), true);
+                    }
+                    if (player.getActivePotionEffects().parallelStream()
+                        .noneMatch(i2 -> i2.getType() == PotionEffectType.UNLUCK)) {
+                      player.addPotionEffect(new PotionEffect(PotionEffectType.UNLUCK, 20, 255, true, false), true);
+                    }
+                  }
+                }
+              });
+        }
+      }
+    }, 0, 1);
   }
 
   @SafeVarargs
